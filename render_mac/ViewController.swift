@@ -12,11 +12,9 @@ import MetalKit
 class ViewController: NSViewController {
 
     var mtkView:MTKView! = nil
-    var viewMat:Matrix4 = Matrix4.identity
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         mtkView = MTKView()
         mtkView.frame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height)
         mtkView.delegate = RenderEngine.sharedInstance
@@ -27,12 +25,6 @@ class ViewController: NSViewController {
         mtkView.clearDepth = 1
         mtkView.clearStencil = 0
         self.view.addSubview(mtkView)
-        
-        viewMat = Matrix4.init(translation: Vector3.init(0, -50, -400))
-        RenderEngine.sharedInstance.viewMat = viewMat
-        RenderEngine.sharedInstance.projMat = Matrix4.init(fovx: 45*Float.pi/180,
-                                                           aspect: Scalar(mtkView.bounds.width/mtkView.bounds.height),
-                                                           near: 0.1, far: 10000)
     }
 
     override var representedObject: Any? {

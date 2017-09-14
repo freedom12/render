@@ -10,8 +10,9 @@ import Foundation
 import MetalKit
 
 class RenderEngine:NSObject, MTKViewDelegate {
-    static let sharedInstance = RenderEngine()
+//    static let sharedInstance = RenderEngine()
     
+    weak var view:MTKView!
     var device: MTLDevice!
     var commandQueue: MTLCommandQueue!
     var library: MTLLibrary!
@@ -20,9 +21,11 @@ class RenderEngine:NSObject, MTKViewDelegate {
     var meshes: [MTKMesh]!
     var texture: MTLTexture!
     var depthStencilState: MTLDepthStencilState!
-    let vertexDescriptor = MTLVertexDescriptor()
+    var vertexDescriptor: MTLVertexDescriptor!
     
-    override init() {
+    init(view _view:MTKView) {
+        super.init()
+        view = _view
         device = MTLCreateSystemDefaultDevice()
         commandQueue = device.makeCommandQueue()
         let descriptor = MTLDepthStencilDescriptor()
@@ -30,30 +33,34 @@ class RenderEngine:NSObject, MTKViewDelegate {
         descriptor.isDepthWriteEnabled = true
         depthStencilState = device.makeDepthStencilState(descriptor: descriptor)
         
-        
-        let scaled = scalingMatrix(1)
-        let rotated = rotationMatrix(90, float3(0, 1, 0))
-        let translated = translationMatrix(float3(0, -10, 0))
-        let modelMatrix = matrix_multiply(matrix_multiply(translated, rotated), scaled)
         let cameraPosition = float3(0, 0, -50)
         let viewMatrix = translationMatrix(cameraPosition)
-        let aspect = Float(5 / 4)
+        
+        let scaled = scalingMatrix(1)
+        let rotated = rotationMatrix(0, float3(0, 1, 0))
+        let translated = translationMatrix(float3(0, 0, 0))
+        let modelMatrix = matrix_multiply(matrix_multiply(translated, rotated), scaled)
+        
+        let aspect = Float(view.frame.width / view.frame.height)
         let projMatrix = projectionMatrix(0.1, far: 100, aspect: aspect, fovy: 1)
-        let modelViewProjectionMatrix = matrix_multiply(projMatrix, matrix_multiply(viewMatrix, modelMatrix))
-        uniformsBuffer = device!.makeBuffer(length: MemoryLayout<matrix_float4x4>.size, options: [])
+
+        let lightPos = float4(50, 50, 50, 1)
+        
+        uniformsBuffer = device!.makeBuffer(length: MemoryLayout<Uniforms>.size, options: [])
         guard let uniformsBuffer = uniformsBuffer else {
             fatalError("Buffer cannot be created.")
         }
-        let mvpMatrix = Uniforms(modelViewProjectionMatrix: modelViewProjectionMatrix)
-        uniformsBuffer.contents().storeBytes(of: mvpMatrix, toByteOffset: 0, as: Uniforms.self)
+        let uniforms = Uniforms(modelMatrix: modelMatrix, viewMatrix: viewMatrix, projMatrix: projMatrix, lightPos: lightPos)
+        uniformsBuffer.contents().storeBytes(of: uniforms, toByteOffset: 0, as: Uniforms.self)
         
-
+        
+        
         library = device.makeDefaultLibrary()
         let vert_func = library.makeFunction(name: "vertex_func")
         let frag_func = library.makeFunction(name: "fragment_func")
         
         // step 1: set up the render pipeline state
-        
+        vertexDescriptor = MTLVertexDescriptor()
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].format = MTLVertexFormat.float3 // position
         vertexDescriptor.attributes[1].offset = 12
@@ -69,9 +76,9 @@ class RenderEngine:NSObject, MTKViewDelegate {
         renderPipelineDescriptor.vertexDescriptor = vertexDescriptor
         renderPipelineDescriptor.vertexFunction = vert_func
         renderPipelineDescriptor.fragmentFunction = frag_func
-        renderPipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        renderPipelineDescriptor.depthAttachmentPixelFormat = .depth32Float_stencil8
-        renderPipelineDescriptor.stencilAttachmentPixelFormat = .depth32Float_stencil8
+        renderPipelineDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+        renderPipelineDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
+        renderPipelineDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
         do {
             renderPipelineState = try device!.makeRenderPipelineState(descriptor: renderPipelineDescriptor)
         }
@@ -93,7 +100,7 @@ class RenderEngine:NSObject, MTKViewDelegate {
         attribute = desc.attributes[4] as! MDLVertexAttribute
         attribute.name = MDLVertexAttributeOcclusionValue
         let mtkBufferAllocator = MTKMeshBufferAllocator(device: device!)
-        guard let url = Bundle.main.url(forResource: "res.bundle/Farmhouse", withExtension: "obj") else {
+        guard let url = Bundle.main.url(forResource: "res.bundle/ball", withExtension: "obj") else {
             fatalError("Resource not found.")
         }
         let asset = MDLAsset(url: url, vertexDescriptor: desc, bufferAllocator: mtkBufferAllocator)
@@ -133,9 +140,7 @@ class RenderEngine:NSObject, MTKViewDelegate {
         guard let drawable = view.currentDrawable, let descriptor = view.currentRenderPassDescriptor else {
             fatalError("The MTKView resources are not available.")
         }
-        descriptor.colorAttachments[0].texture = drawable.texture
-        descriptor.colorAttachments[0].loadAction = .clear
-        descriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.5, 0.5, 0.5, 1)
+        
         let commandBuffer = commandQueue!.makeCommandBuffer()!
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)!
         commandEncoder.setRenderPipelineState(renderPipelineState!)

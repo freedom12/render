@@ -7,7 +7,10 @@ struct Vertex {
 }
 
 struct Uniforms {
-    var modelViewProjectionMatrix: matrix_float4x4
+    var modelMatrix: matrix_float4x4
+    var viewMatrix: matrix_float4x4
+    var projMatrix: matrix_float4x4
+    var lightPos: vector_float4
 }
 
 func translationMatrix(_ position: float3) -> matrix_float4x4 {

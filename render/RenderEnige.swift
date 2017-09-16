@@ -20,6 +20,7 @@ class RenderEngine:NSObject, MTKViewDelegate {
     var uniformsBuffer: MTLBuffer!
     var meshes: [MTKMesh]!
     var texture: MTLTexture!
+    var sampler:MTLSamplerState!
     var depthStencilState: MTLDepthStencilState!
     var vertexDescriptor: MTLVertexDescriptor!
     
@@ -45,13 +46,6 @@ class RenderEngine:NSObject, MTKViewDelegate {
         
         let aspect = Float(view.frame.width / view.frame.height)
         let projMatrix = projectionMatrix(0.1, far: 100, aspect: aspect, fovy: 1)
-
-//        let sampleDesc = MTLSamplerDescriptor.init()
-//        sampleDesc.minFilter = .nearest
-//        sampleDesc.magFilter = .nearest
-//        sampleDesc.sAddressMode = .repeat
-//        sampleDesc.tAddressMode = .repeat
-//        let samplerState = device.makeSamplerState(descriptor: sampleDesc)!
         
         uniformsBuffer = device!.makeBuffer(length: MemoryLayout<Uniforms>.size, options: [])
         guard let uniformsBuffer = uniformsBuffer else {
@@ -61,12 +55,11 @@ class RenderEngine:NSObject, MTKViewDelegate {
         uniformsBuffer.contents().storeBytes(of: uniforms, toByteOffset: 0, as: Uniforms.self)
         
         
-        
         library = device.makeDefaultLibrary()
         let vert_func = library.makeFunction(name: "vertex_func")
         let frag_func = library.makeFunction(name: "fragment_func")
         
-        // step 1: set up the render pipeline state
+        
         vertexDescriptor = MTLVertexDescriptor()
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].format = MTLVertexFormat.float3 // position
@@ -93,7 +86,6 @@ class RenderEngine:NSObject, MTKViewDelegate {
             fatalError("\(error)")
         }
         
-        // step 2: set up the asset initialization
         
         let desc = MTKModelIOVertexDescriptorFromMetal(vertexDescriptor)
         var attribute = desc.attributes[0] as! MDLVertexAttribute
@@ -111,29 +103,6 @@ class RenderEngine:NSObject, MTKViewDelegate {
             fatalError("Resource not found.")
         }
         let asset = MDLAsset(url: url, vertexDescriptor: desc, bufferAllocator: mtkBufferAllocator)
-
-        
-//        let textureDesc = MTLTextureDescriptor.textureCubeDescriptor(pixelFormat: .rgba8Uint, size: 512, mipmapped: true)
-//        texture = device.makeTexture(descriptor: textureDesc)
-//        let loader = MTKTextureLoader(device: device)
-//        guard let file = Bundle.main.path(forResource: "res.bundle/Farmhouse", ofType: "png") else {
-//            fatalError("Resource not found.")
-//        }
-//        let urls = [
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negx", ofType: "jpg")!),
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negy", ofType: "jpg")!),
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negz", ofType: "jpg")!),
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posx", ofType: "jpg")!),
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posy", ofType: "jpg")!),
-//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posz", ofType: "jpg")!),            ]
-        //            let data = try Data(contentsOf: URL(fileURLWithPath: file))
-        //            texture = try loader.newTexture(data: data, options: nil)
-//        let err = NSErrorPointer(nilLiteral: ())
-//        let option = [MTKTextureLoader.Option.cubeLayout]
-//        let textures = loader.newTextures(URLs: urls, options: option, error: err)
-        
-//         step 3: set up MetalKit mesh and submesh objects
-        
         guard let mesh = asset.object(at: 0) as? MDLMesh else {
             fatalError("Mesh not found.")
         }
@@ -144,6 +113,23 @@ class RenderEngine:NSObject, MTKViewDelegate {
         catch let error {
             fatalError("\(error)")
         }
+        
+        let loader = MTKTextureLoader(device: device)
+        let textureURL = URL(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/cubemap", ofType: "png")!)
+        let options = [
+            MTKTextureLoader.Option.cubeLayout:MTKTextureLoader.CubeLayout.vertical,
+            MTKTextureLoader.Option.allocateMipmaps:true,
+            MTKTextureLoader.Option.generateMipmaps:true
+        ] as [MTKTextureLoader.Option : Any]
+        texture = try! loader.newTexture(URL: textureURL, options: options)
+        
+        let samplerDesc = MTLSamplerDescriptor()
+        samplerDesc.minFilter = .linear
+        samplerDesc.magFilter = .linear
+        samplerDesc.mipFilter = .linear
+        samplerDesc.lodMinClamp = 0
+        samplerDesc.lodMaxClamp = 10
+        sampler = device.makeSamplerState(descriptor: samplerDesc)
     }
 
     
@@ -165,8 +151,7 @@ class RenderEngine:NSObject, MTKViewDelegate {
         commandEncoder.setVertexBuffer(uniformsBuffer, offset: 0, index: 1)
         commandEncoder.setFragmentBuffer(uniformsBuffer, offset: 0, index: 1)
         commandEncoder.setFragmentTexture(texture, index: 0)
-        
-        // step 4: set up Metal rendering and drawing of meshes
+        commandEncoder.setFragmentSamplerState(sampler, index: 0)
         
         guard let mesh = meshes?.first else {
             fatalError("Mesh not found.")

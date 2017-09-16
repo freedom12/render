@@ -87,7 +87,8 @@ float3 fresnelSchlick(float cosTheta, float3 f0)
 
 fragment half4 fragment_func(VertexOut fragments [[stage_in]],
                              constant Uniforms& uniforms [[buffer(1)]],
-                             texture2d<float> textures [[texture(0)]])
+                             texturecube<float> cubeTexture [[texture(0)]],
+                             sampler cubeSampler [[sampler(0)]])
 {
     float metallic = 1;
     float roughness = 0;
@@ -151,7 +152,8 @@ fragment half4 fragment_func(VertexOut fragments [[stage_in]],
     r.x = -r.x;
     float3 env_fresnel = f0 + (max(f0, 1.0 - roughness) - f0) * pow((1.0 - max(dot(n, v), 0.0)), 10.0);
     float3 reflection = float3(0.5);//textureCube(environment, reflect_vector, alpha * 15.0).rgb;
-//    reflection = pow(reflection, float3(GAMMA));
+    reflection = cubeTexture.sample(cubeSampler, r, level(roughness * 10)).xyz;
+    reflection = pow(reflection, float3(GAMMA));
     reflection = reflection * env_fresnel * reflectivity;
     color = color + reflection;
     

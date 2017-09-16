@@ -33,8 +33,10 @@ class RenderEngine:NSObject, MTKViewDelegate {
         descriptor.isDepthWriteEnabled = true
         depthStencilState = device.makeDepthStencilState(descriptor: descriptor)
         
-        let cameraPosition = float3(0, 0, -50)
-        let viewMatrix = translationMatrix(cameraPosition)
+        let lightPos = float4(50, 50, 50, 1)
+        let viewPos = float4(0, 0, 30, 1)
+        
+        let viewMatrix = translationMatrix(float3(viewPos.x, viewPos.y, -viewPos.z))
         
         let scaled = scalingMatrix(1)
         let rotated = rotationMatrix(0, float3(0, 1, 0))
@@ -44,13 +46,18 @@ class RenderEngine:NSObject, MTKViewDelegate {
         let aspect = Float(view.frame.width / view.frame.height)
         let projMatrix = projectionMatrix(0.1, far: 100, aspect: aspect, fovy: 1)
 
-        let lightPos = float4(50, 50, 50, 1)
+//        let sampleDesc = MTLSamplerDescriptor.init()
+//        sampleDesc.minFilter = .nearest
+//        sampleDesc.magFilter = .nearest
+//        sampleDesc.sAddressMode = .repeat
+//        sampleDesc.tAddressMode = .repeat
+//        let samplerState = device.makeSamplerState(descriptor: sampleDesc)!
         
         uniformsBuffer = device!.makeBuffer(length: MemoryLayout<Uniforms>.size, options: [])
         guard let uniformsBuffer = uniformsBuffer else {
             fatalError("Buffer cannot be created.")
         }
-        let uniforms = Uniforms(modelMatrix: modelMatrix, viewMatrix: viewMatrix, projMatrix: projMatrix, lightPos: lightPos)
+        let uniforms = Uniforms(modelMatrix: modelMatrix, viewMatrix: viewMatrix, projMatrix: projMatrix, lightPos: lightPos, viewPos: viewPos)
         uniformsBuffer.contents().storeBytes(of: uniforms, toByteOffset: 0, as: Uniforms.self)
         
         
@@ -105,17 +112,25 @@ class RenderEngine:NSObject, MTKViewDelegate {
         }
         let asset = MDLAsset(url: url, vertexDescriptor: desc, bufferAllocator: mtkBufferAllocator)
 
-        let loader = MTKTextureLoader(device: device)
-        guard let file = Bundle.main.path(forResource: "res.bundle/Farmhouse", ofType: "png") else {
-            fatalError("Resource not found.")
-        }
-        do {
-            let data = try Data(contentsOf: URL(fileURLWithPath: file))
-            texture = try loader.newTexture(data: data, options: nil)
-        }
-        catch let error {
-            fatalError("\(error)")
-        }
+        
+//        let textureDesc = MTLTextureDescriptor.textureCubeDescriptor(pixelFormat: .rgba8Uint, size: 512, mipmapped: true)
+//        texture = device.makeTexture(descriptor: textureDesc)
+//        let loader = MTKTextureLoader(device: device)
+//        guard let file = Bundle.main.path(forResource: "res.bundle/Farmhouse", ofType: "png") else {
+//            fatalError("Resource not found.")
+//        }
+//        let urls = [
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negx", ofType: "jpg")!),
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negy", ofType: "jpg")!),
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/negz", ofType: "jpg")!),
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posx", ofType: "jpg")!),
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posy", ofType: "jpg")!),
+//            URL.init(fileURLWithPath: Bundle.main.path(forResource: "res.bundle/tex/posz", ofType: "jpg")!),            ]
+        //            let data = try Data(contentsOf: URL(fileURLWithPath: file))
+        //            texture = try loader.newTexture(data: data, options: nil)
+//        let err = NSErrorPointer(nilLiteral: ())
+//        let option = [MTKTextureLoader.Option.cubeLayout]
+//        let textures = loader.newTextures(URLs: urls, options: option, error: err)
         
 //         step 3: set up MetalKit mesh and submesh objects
         
@@ -148,6 +163,7 @@ class RenderEngine:NSObject, MTKViewDelegate {
         commandEncoder.setCullMode(.back)
         commandEncoder.setFrontFacing(.counterClockwise)
         commandEncoder.setVertexBuffer(uniformsBuffer, offset: 0, index: 1)
+        commandEncoder.setFragmentBuffer(uniformsBuffer, offset: 0, index: 1)
         commandEncoder.setFragmentTexture(texture, index: 0)
         
         // step 4: set up Metal rendering and drawing of meshes

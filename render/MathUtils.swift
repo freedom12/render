@@ -11,6 +11,7 @@ struct Uniforms {
     var viewMatrix: matrix_float4x4
     var projMatrix: matrix_float4x4
     var lightPos: vector_float4
+    var viewPos: vector_float4
 }
 
 func translationMatrix(_ position: float3) -> matrix_float4x4 {

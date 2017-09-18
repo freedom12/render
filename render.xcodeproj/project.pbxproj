@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		39168F111F6E0C0800BD28A6 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39168F101F6E0C0800BD28A6 /* Model.swift */; };
+		39168F121F6E0C0800BD28A6 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39168F101F6E0C0800BD28A6 /* Model.swift */; };
 		39F0358E1F5EE0EB00A27AA9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F0358D1F5EE0EB00A27AA9 /* AppDelegate.swift */; };
 		39F035901F5EE0EB00A27AA9 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F0358F1F5EE0EB00A27AA9 /* ViewController.swift */; };
 		39F035931F5EE0EB00A27AA9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 39F035911F5EE0EB00A27AA9 /* Main.storyboard */; };
@@ -31,6 +33,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		39168F101F6E0C0800BD28A6 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		39F0358A1F5EE0EB00A27AA9 /* render_ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = render_ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		39F0358D1F5EE0EB00A27AA9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		39F0358F1F5EE0EB00A27AA9 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -112,6 +115,7 @@
 				39F035C91F5FDCED00A27AA9 /* VectorMath.swift */,
 				39F035CC1F5FE0D700A27AA9 /* MathUtils.swift */,
 				39F035CF1F5FF06A00A27AA9 /* Mesh.swift */,
+				39168F101F6E0C0800BD28A6 /* Model.swift */,
 			);
 			path = render;
 			sourceTree = "<group>";
@@ -241,6 +245,7 @@
 				39F035CA1F5FDCED00A27AA9 /* VectorMath.swift in Sources */,
 				39F0358E1F5EE0EB00A27AA9 /* AppDelegate.swift in Sources */,
 				39F035CD1F5FE0D700A27AA9 /* MathUtils.swift in Sources */,
+				39168F111F6E0C0800BD28A6 /* Model.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +260,7 @@
 				39F035CB1F5FDCED00A27AA9 /* VectorMath.swift in Sources */,
 				39F035A71F5EE20100A27AA9 /* AppDelegate.swift in Sources */,
 				39F035CE1F5FE0D700A27AA9 /* MathUtils.swift in Sources */,
+				39168F121F6E0C0800BD28A6 /* Model.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
